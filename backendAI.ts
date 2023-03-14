@@ -15,6 +15,7 @@ rcsAI.post("/", async (req, res) => {
         const id: string = req.body.id;
         const { error } = validate_id_string.validate(id);
         if (error) throw error;
+
         const passList = await PassModel.find({ satellite: id });
         const reversePassList = passList.reverse();
         const passesInGrouping = [reversePassList[0]];
@@ -23,11 +24,9 @@ rcsAI.post("/", async (req, res) => {
                 passesInGrouping.push(reversePassList[i + 1]);
             } else break;
         }
-
         const reports = await PassReportModel.find({
             pass: passesInGrouping,
         });
-
         const timeRcsPair = [];
         for (let i = 0; i < passesInGrouping.length; i++) {
             if (reports.filter((report) => report.pass.toString() === passesInGrouping[i].id)[0])
@@ -36,7 +35,6 @@ rcsAI.post("/", async (req, res) => {
                     reports.filter((report) => report.pass.toString() === passesInGrouping[i].id)[0].rcs,
                 ]);
         }
-
         const trainingData = timeRcsPair.map((pairs) => ({
             time: pairs[0],
             rcs: pairs[1],
@@ -46,7 +44,6 @@ rcsAI.post("/", async (req, res) => {
         const tensorData = convertToTensor(trainingData);
         const { inputs, labels } = tensorData;
         await trainModel(model, inputs, labels);
-        // const p = predict(model, trainingData, tensorData, req.body.timeToPredict);
 
         const { inputMax, inputMin, labelMin, labelMax } = tensorData;
         const xsNorm = tf
